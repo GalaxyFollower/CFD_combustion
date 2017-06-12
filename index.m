@@ -4,15 +4,15 @@ function index = index(i,j,dimX,dimY)
 
 index = i + (j-1) * dimY;
 
-if i==0
-    index = -1; %'North boundary'
-elseif i>dimY
-    index = -2; %'South boundary'
-elseif j == 0
-    index = -3; %'West boundary'
-elseif j > dimX
-    index = -4; %'East boundary'
-end
+% if i==0
+%     index = -1; %'North boundary'
+% elseif i>dimY
+%     index = -2; %'South boundary'
+% elseif j == 0
+%     index = -3; %'West boundary'
+% elseif j > dimX
+%     index = -4; %'East boundary'
+% end
 
 
 end
