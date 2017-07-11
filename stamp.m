@@ -1,4 +1,4 @@
-function [stecil,b] = stamp(i, j, dimX, dimY,X,Y,boundParameters,nodeType,boundOrientation)
+function [stecil,b] = stamp(i, j, dimX, dimY,X,Y,boundParameters,nodeType,boundOrientation, C)
 %stecil calculate the linear equation for node (i, j)
 %
 %  input:
@@ -23,7 +23,7 @@ stecil = zeros(1, dimX*dimY);
 
 %nodetype
 switch nodeType
-    case 0  %Case innernode
+    case {0,66,67,68}  %Case innernode
         
         % Nomenclature:
         %
@@ -134,6 +134,11 @@ switch nodeType
             + x_sW*y_nW - y_sW*x_nW...
             + x_nW*y_n - y_nW*x_n) / 2;
         
+        C_P = C(i,j);
+        C_N = C(i-1,j);
+        C_W = C(i,j-1);
+        C_S = C(i+1,j);
+        C_E = C(i,j+1);
         %$$$$$$$$$$$$$$$$$$$$$$ Stecil $$$$$$$$$$$$$$$$$$$
         
         build_inner
@@ -141,23 +146,23 @@ switch nodeType
         %$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
         
         % East
-        stecil(index(i, j+1,dimX,dimY)) = D3;
+        stecil(index(i, j+1,dimY)) = D3;
         % West
-        stecil(index(i, j-1,dimX,dimY)) = D_3;
+        stecil(index(i, j-1,dimY)) = D_3;
         % South
-        stecil(index(i+1, j,dimX,dimY)) = D1;
+        stecil(index(i+1, j,dimY)) = D1;
         % North
-        stecil(index(i-1, j,dimX,dimY)) = D_1;
+        stecil(index(i-1, j,dimY)) = D_1;
         % NW
-        stecil(index(i-1, j-1,dimX,dimY)) = D_4;
+        stecil(index(i-1, j-1,dimY)) = D_4;
         % NE
-        stecil(index(i-1, j+1,dimX,dimY)) = D2;
+        stecil(index(i-1, j+1,dimY)) = D2;
         % SW
-        stecil(index(i+1, j-1,dimX,dimY)) = D_2;
+        stecil(index(i+1, j-1,dimY)) = D_2;
         % SE
-        stecil(index(i+1, j+1,dimX,dimY)) = D4;
+        stecil(index(i+1, j+1,dimY)) = D4;
         % P
-        stecil(index(i, j,dimX,dimY)) = D0;
+        stecil(index(i, j,dimY)) = D0;
         
     case -1  %Case outside domain nothing happens
         
@@ -178,8 +183,8 @@ switch nodeType
         switch orientation
             case 1      %Case West
                 if type == 0 %boundary is Dirichlet
-                    stecil(index(i,j,dimX,dimY))=1;
-                elseif type == 1 %boundary is Neumann
+                    stecil(index(i,j,dimY))=1;
+                else
                     %Nomenclature...
                     y_NE = Y(i-1,j+1);   x_NE = X(i-1,j+1);
                     y_N  = Y(i-1,j  );   x_N  = X(i-1,j  );
@@ -254,6 +259,13 @@ switch nodeType
                         + x_nE*y_sE - y_nE*x_sE...
                         + x_sE*y_s - y_sE*x_s) / 2;
                     
+                    C_P = C(i,j);
+                    C_N = C(i-1,j);
+                    C_S = C(i+1,j);
+                    C_NE = C(i-1,j+1);
+                    C_SE = C(i+1,j+1);
+                    C_E = C(i,j+1);
+                    
                     %$$$$$$$$$$$$$$$$$$$$$$ Stecil $$$$$$$$$$$$$$$$$$$
                     
                     build_west
@@ -261,23 +273,31 @@ switch nodeType
                     %$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                     
                     % East
-                    stecil(index(i, j+1,dimX,dimY)) = D3;
+                    stecil(index(i, j+1,dimY)) = D3;
                     % South
-                    stecil(index(i+1, j,dimX,dimY)) = D1;
+                    stecil(index(i+1, j,dimY)) = D1;
                     % North
-                    stecil(index(i-1, j,dimX,dimY)) = D_1;
+                    stecil(index(i-1, j,dimY)) = D_1;
                     % NE
-                    stecil(index(i-1, j+1,dimX,dimY)) = D2;
+                    stecil(index(i-1, j+1,dimY)) = D2;
                     % SE
-                    stecil(index(i+1, j+1,dimX,dimY)) = D4;
-                    % P !!Neumann
-                    stecil(index(i, j,dimX,dimY)) = D0;
+                    stecil(index(i+1, j+1,dimY)) = D4;
+                    
+                    if type == 1
+                            % P !!Neumann
+                            stecil(index(i, j,dimY)) = D0;
+                    elseif type == 2 %boundary is Robin
+                            Tinf = boundParameters(nodeType,2);
+                            alpha = boundParameters(nodeType,3);
+                            stecil(index(i,j,dimY)) = D0-alpha*dl_s_n/S_epsilon;
+                            b= -alpha*dl_s_n*Tinf/S_epsilon;
+                    end
                 end
                 
             case 2          %Case east
                 if type == 0 %Dirichlet boundary
-                    stecil(index(i,j,dimX,dimY))=1;
-                elseif type == 1 %Neumann boundary
+                    stecil(index(i,j,dimY))=1;
+                else %Neumann or Robin boundary
                     % Nomencature:
                     %   NW=(i-1,j-1)    Nw -Nomega - N=(i-1,j)
                     %
@@ -368,6 +388,13 @@ switch nodeType
                         + x_sW*y_nW - y_sW*x_nW...
                         + x_nW*y_n - y_nW*x_n) / 2;
                     
+                    C_P = C(i,j);
+                    C_N = C(i-1,j);
+                    C_S = C(i+1,j);
+                    C_NW = C(i-1,j-1);
+                    C_SW = C(i+1,j-1);
+                    C_W = C(i,j-1);
+                    
                     
                     %$$$$$$$$$$$$$$$$$$$$$$ Stecil $$$$$$$$$$$$$$$$$$$
                     
@@ -376,22 +403,33 @@ switch nodeType
                     %$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                     
                     % West
-                    stecil(index(i, j-1,dimX,dimY)) = D_3;
+                    stecil(index(i, j-1,dimY)) = D_3;
                     % South
-                    stecil(index(i+1, j,dimX,dimY)) = D1;
+                    stecil(index(i+1, j,dimY)) = D1;
                     % North
-                    stecil(index(i-1, j,dimX,dimY)) = D_1;
+                    stecil(index(i-1, j,dimY)) = D_1;
                     % NW
-                    stecil(index(i-1, j-1,dimX,dimY)) = D_4;
+                    stecil(index(i-1, j-1,dimY)) = D_4;
                     % SW
-                    stecil(index(i+1, j-1,dimX,dimY)) = D_2;
+                    stecil(index(i+1, j-1,dimY)) = D_2;
                     %P
-                    stecil(index(i, j,dimX,dimY)) = D0;
+                    stecil(index(i, j,dimY)) = D0;
+                    
+                    
+                    if type == 1
+                            % P !!Neumann
+                            stecil(index(i, j,dimY)) = D0;
+                    elseif type == 2 %boundary is Robin
+                            Tinf = boundParameters(nodeType,2);
+                            alpha = boundParameters(nodeType,3);
+                            stecil(index(i,j,dimY)) = D0-alpha*dl_s_n/S_omega;
+                            b= -alpha*dl_s_n*Tinf/S_omega;
+                    end
                 end
                 
             case 3          %Case north
                 if type == 0 %dirichlet boundary
-                    stecil(index(i,j,dimX,dimY))=1;
+                    stecil(index(i,j,dimY))=1;
                 elseif type == 1 %Neumann boundary
                     % Nomencature:
                     %    W=(i,j-1) --  w - -P=(i,j) - - e - - E=(i,j+1)
@@ -474,6 +512,13 @@ switch nodeType
                         + x_sW*y_W - y_sW*x_W...
                         + x_W*y_P - y_W*x_P) / 2;
                     
+                    C_P = C(i,j);
+                    C_S = C(i+1,j);
+                    C_W = C(i,j-1);
+                    C_SW = C(i+1,j-1);
+                    C_SE = C(i+1,j+1);
+                    C_E = C(i,j+1);
+                    
                     %$$$$$$$$$$$$$$$$$$$$$$ Stecil $$$$$$$$$$$$$$$$$$$
                     
                     build_north
@@ -481,22 +526,22 @@ switch nodeType
                     %$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                     
                     % East
-                    stecil(index(i, j+1,dimX,dimY)) = D3;
+                    stecil(index(i, j+1,dimY)) = D3;
                     % West
-                    stecil(index(i, j-1,dimX,dimY)) = D_3;
+                    stecil(index(i, j-1,dimY)) = D_3;
                     % South
-                    stecil(index(i+1, j,dimX,dimY)) = D1;
+                    stecil(index(i+1, j,dimY)) = D1;
                     % SW
-                    stecil(index(i+1, j-1,dimX,dimY)) = D_2;
+                    stecil(index(i+1, j-1,dimY)) = D_2;
                     % SE
-                    stecil(index(i+1, j+1,dimX,dimY)) = D4;
+                    stecil(index(i+1, j+1,dimY)) = D4;
                     % P !!Neumann
-                    stecil(index(i, j,dimX,dimY)) = D0;
+                    stecil(index(i, j,dimY)) = D0;
                 end
                 
             case 4   %Case south
                 if type == 0 %dirichlet boundary
-                    stecil(index(i,j,dimX,dimY))=1;
+                    stecil(index(i,j,dimY))=1;
                 elseif type == 1 %Neumann boundary
                     % Nomencature:
                     %    NW=(i-1,j-1)  Nw - N=(i-1,j)- Ne    NE=(i-1,j+1)
@@ -575,6 +620,13 @@ switch nodeType
                         + x_W*y_nW - y_W*x_nW...
                         + x_nW*y_n - y_nW*x_n) / 2;
                     
+                    C_P = C(i,j);
+                    C_N = C(i-1,j);
+                    C_W = C(i,j-1);
+                    C_NW = C(i-1,j-1);
+                    C_NE = C(i-1,j+1);
+                    C_E = C(i,j+1);
+                    
                     %$$$$$$$$$$$$$$$$$$$$$$ Stecil $$$$$$$$$$$$$$$$$$$
                     
                     build_south
@@ -582,17 +634,17 @@ switch nodeType
                     %$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                     
                     % East
-                    stecil(index(i, j+1,dimX,dimY)) = D3;
+                    stecil(index(i, j+1,dimY)) = D3;
                     % West
-                    stecil(index(i, j-1,dimX,dimY)) = D_3;
+                    stecil(index(i, j-1,dimY)) = D_3;
                     % North
-                    stecil(index(i-1, j,dimX,dimY)) = D_1;
+                    stecil(index(i-1, j,dimY)) = D_1;
                     % NW
-                    stecil(index(i-1, j-1,dimX,dimY)) = D_4;
+                    stecil(index(i-1, j-1,dimY)) = D_4;
                     % NE
-                    stecil(index(i-1, j+1,dimX,dimY)) = D2;
+                    stecil(index(i-1, j+1,dimY)) = D2;
                     % P !!Neumann
-                    stecil(index(i, j,dimX,dimY)) = D0;
+                    stecil(index(i, j,dimY)) = D0;
                 end
                 
             case 5 %Northwestcorner
@@ -642,6 +694,11 @@ switch nodeType
                     + x_s*y_P - y_s*x_P...
                     + x_P*y_E - y_P*x_E) / 2;
                 
+                C_P = C(i,j);
+                C_S = C(i+1,j);
+                C_SE = C(i+1,j+1);
+                C_E = C(i,j+1);
+                
                 %$$$$$$$$$$$$$$$$$$$$$$ Stecil $$$$$$$$$$$$$$$$$$$
                 
                 build_northWest
@@ -649,13 +706,13 @@ switch nodeType
                 %$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                 
                 % East
-                stecil(index(i, j+1,dimX,dimY)) = D3;
+                stecil(index(i, j+1,dimY)) = D3;
                 % South
-                stecil(index(i+1, j,dimX,dimY)) = D1;
+                stecil(index(i+1, j,dimY)) = D1;
                 % SE
-                stecil(index(i+1, j+1,dimX,dimY)) = D4;
+                stecil(index(i+1, j+1,dimY)) = D4;
                 % P
-                stecil(index(i, j,dimX,dimY)) = D0;
+                stecil(index(i, j,dimY)) = D0;
                 
             case 6 %Northeastcorner
                 % Nomencature:
@@ -714,6 +771,11 @@ switch nodeType
                     + x_sW*y_W - y_sW*x_W...
                     + x_W*y_P - y_W*x_P) / 2;
                 
+                C_P = C(i,j);
+                C_S = C(i+1,j);
+                C_SW = C(i+1,j-1);
+                C_W = C(i,j-1);
+                
                 
                 %$$$$$$$$$$$$$$$$$$$$$$ Stecil $$$$$$$$$$$$$$$$$$$
                 
@@ -722,13 +784,13 @@ switch nodeType
                 %$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                 
                 % West
-                stecil(index(i, j-1,dimX,dimY)) = D_3;
+                stecil(index(i, j-1,dimY)) = D_3;
                 % South
-                stecil(index(i+1, j,dimX,dimY)) = D1;
+                stecil(index(i+1, j,dimY)) = D1;
                 % SW
-                stecil(index(i+1, j-1,dimX,dimY)) = D_2;
+                stecil(index(i+1, j-1,dimY)) = D_2;
                 % P
-                stecil(index(i, j,dimX,dimY)) = D0;
+                stecil(index(i, j,dimY)) = D0;
                 
             case 7 %Westsouthcorner
                 % Calculate some help values
@@ -781,6 +843,11 @@ switch nodeType
                     + x_ne*y_e - y_ne*x_e...
                     + x_e*y_P - y_e*x_P) / 2;
                 
+                C_P = C(i,j);
+                C_N = C(i-1,j);
+                C_NE = C(i-1,j+1);
+                C_E = C(i,j+1);
+                
                 %$$$$$$$$$$$$$$$$$$$$$$ Stecil $$$$$$$$$$$$$$$$$$$
                 
                 build_southWest
@@ -788,13 +855,13 @@ switch nodeType
                 %$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                 
                 % East
-                stecil(index(i, j+1,dimX,dimY)) = D3;
+                stecil(index(i, j+1,dimY)) = D3;
                 % North
-                stecil(index(i-1, j,dimX,dimY)) = D_1;
+                stecil(index(i-1, j,dimY)) = D_1;
                 % NE
-                stecil(index(i-1, j+1,dimX,dimY)) = D2;
+                stecil(index(i-1, j+1,dimY)) = D2;
                 % P
-                stecil(index(i, j,dimX,dimY)) = D0;
+                stecil(index(i, j,dimY)) = D0;
                 
             case 8 %Southeastcorner
                 % Nomencature:
@@ -853,6 +920,11 @@ switch nodeType
                     + x_w*y_nw - y_w*x_nw...
                     + x_nw*y_n - y_nw*x_n) / 2;
                 
+                C_P = C(i,j);
+                C_N = C(i-1,j);
+                C_NW = C(i-1,j-1);
+                C_W = C(i,j-1);
+                
                 %$$$$$$$$$$$$$$$$$$$$$$ Stecil $$$$$$$$$$$$$$$$$$$
                 
                 build_southEast
@@ -860,43 +932,43 @@ switch nodeType
                 %$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                 
                 % West
-                stecil(index(i, j-1,dimX,dimY)) = D_3;
+                stecil(index(i, j-1,dimY)) = D_3;
                 % North
-                stecil(index(i-1, j,dimX,dimY)) = D_1;
+                stecil(index(i-1, j,dimY)) = D_1;
                 % NW
-                stecil(index(i-1, j-1,dimX,dimY)) = D_4;
+                stecil(index(i-1, j-1,dimY)) = D_4;
                 % P
-                stecil(index(i, j,dimX,dimY)) = D0;
+                stecil(index(i, j,dimY)) = D0;
                 
-            case 9 %InnerNorthwest
-                %P
-                stecil(index(i,j,dimX,dimY))=-1;
-                %North
-                stecil(index(i-1,j,dimX,dimY))=1/2;
-                %West
-                stecil(index(i,j-1,dimX,dimY))=1/2;
-                
-            case 10 %InnerNortheast
-                %P
-                stecil(index(i,j,dimX,dimY))=-1;
-                %North
-                stecil(index(i-1,j,dimX,dimY))=1/2;
-                %East
-                stecil(index(i,j+1,dimX,dimY))=1/2;
-            case 11 %InnerSouthwest
-                %P
-                stecil(index(i,j,dimX,dimY))=-1;
-                %South
-                stecil(index(i+1,j,dimX,dimY))=1/2;
-                %West
-                stecil(index(i,j-1,dimX,dimY))=1/2;
-            case 12 %InnerSoutheast
-                %P
-                stecil(index(i,j,dimX,dimY))=-1;
-                %South
-                stecil(index(i+1,j,dimX,dimY))=1/2;
-                %East
-                stecil(index(i,j+1,dimX,dimY))=1/2;
+%             case 9 %InnerNorthwest
+%                 %P
+%                 stecil(index(i,j,dimY))=-1;
+%                 %North
+%                 stecil(index(i-1,j,dimY))=1/2;
+%                 %West
+%                 stecil(index(i,j-1,dimY))=1/2;
+%                 
+%             case 10 %InnerNortheast
+%                 %P
+%                 stecil(index(i,j,dimY))=-1;
+%                 %North
+%                 stecil(index(i-1,j,dimY))=1/2;
+%                 %East
+%                 stecil(index(i,j+1,dimY))=1/2;
+%             case 11 %InnerSouthwest
+%                 %P
+%                 stecil(index(i,j,dimY))=-1;
+%                 %South
+%                 stecil(index(i+1,j,dimY))=1/2;
+%                 %West
+%                 stecil(index(i,j-1,dimY))=1/2;
+%             case 12 %InnerSoutheast
+%                 %P
+%                 stecil(index(i,j,dimY))=-1;
+%                 %South
+%                 stecil(index(i+1,j,dimY))=1/2;
+%                 %East
+%                 stecil(index(i,j+1,dimY))=1/2;
             
         end
 end

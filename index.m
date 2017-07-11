@@ -1,4 +1,4 @@
-function index = index(i,j,dimX,dimY)
+function index = index(i,j,dimY)
 %Index gives the place in the column vector where the value of the variable
 %of the point in the grid is saved
 

@@ -15,12 +15,11 @@ d=0.080; %length between flame end and detection point
 %time [s]
 t_0 = 0;
 t_end = 0.5;
-delta_t = 10^(-6);
+delta_t = 10^(-5);
 
 steps = round((t_end-t_0)/delta_t);
 timeInterval = t_0:delta_t:t_end-delta_t;
 
-tau=1000; %* nr of delta_t
 delta_t=(t_end-t_0)/(steps-1);%0.001 second=1millisecond
 
 % Number of degrees of freedom (number of nodes per length)
@@ -30,14 +29,6 @@ ndof=dimX*dimY;
 
 %Number of eigenvectors:
 N = 20;
-
-%Initial condition:
-eta_deta = zeros(2*N,tau+1);%time delay determines how much initial conditions we need
-%eta_deta(1:N,tau+1) = 1; %op t=tau+1 exitatie 1 mode
-
-%Feedback constants
-n=100; %linear%
-k=3.4; %nonlinear%
 
 %% set up mesh
 [X,Y,delta_X,delta_Y,C,nodeInfo,boundOrientation] = SetUpMesh(dimX,dimY,h1,h2,l1,l2,c1,c2,f,d);
@@ -101,12 +92,39 @@ end
 
 disp('Eigendecomposition of system is done...');
 
-[eta_deta, full_source] = solveSystem(D,V,Grad_V_full,N,delta_t,steps,dB,source,nodeInfo,sourceTemplate,eta_deta,tau,n,k);
-
 pos_flame=find(nodeInfo==66);%1D-nummering van Y(boven-onder) over X(links-rechts)
 pos_ref_point=find(nodeInfo==67);
 pos_measure_point=find(nodeInfo==68);
 
+%Initial condition:
+%eta_deta(1:N,tau+1) = 1; %op t=tau+1 exitatie 1 mode
+
+tau=500; %* nr of delta_t
+eta_deta = zeros(2*N,tau+1);%time delay determines how much initial conditions we need
+%Feedback constants
+n=1000; %linear%
+k=200; %nonlinear%
+
+tau_range = 100:1:200;
+maxfreq = [];
+maxfreqampl = [];
+maxampl = [];
+fftsave = [];
+
+for tau = tau_range
+ disp('Solving for following constant');
+ tau
+ eta_deta = zeros(2*N,tau+1); %start from still initial condition
+[eta_deta, full_source] = solveSystem(D,V,Grad_V_full,N,delta_t,steps,dB,source,nodeInfo,sourceTemplate,eta_deta,tau,n,k);
+
+P_punt=V(find(indexMap==pos_measure_point),:)*eta_deta(1:N,:);
+fftstart = round(steps*4/5);
+pfft = abs(fft(P_punt(fftstart:end)));
+maxfreqampl = [maxfreqampl, max(pfft)];
+maxfreq = [maxfreq,find(pfft(1:2000) == maxfreqampl(end))];
+maxampl = [maxampl, max(P_punt)];
+fftsave = [fftsave, pfft(1:10000)'];
+end
 disp('time iteration done... starting extracting pressure');
 
 %P=V*eta_deta(1:N,:);%(ndof*N)(N*steps)
@@ -114,35 +132,62 @@ disp('time iteration done... starting extracting pressure');
 %% Create Gif with sparse Matrix
 %CreateSparseGif(P,X,Y,100,dimX,dimY,indexMap,nodeInfo);
 
+%% Create plots of peaks
+
+figure;
+plot(tau_range,maxfreqampl,'*');
+title('amplitude of the maximum frequency in the fft');
+ylabel('amplitude');
+xlabel('tau');
+
+figure;
+plot(tau_range,maxfreq,'*');
+title('the maximum frequency in the fft');
+ylabel('frequency');
+xlabel('tau');
+
+figure;
+plot(tau_range,maxampl,'*');
+title('global maximum of the solution');
+ylabel('amplitude');
+xlabel('tau');
+
+figure;
+maxfrequency = 250;
+surf(1:size(fftsave,2),1:maxfrequency,fftsave(1:maxfrequency,:),'linestyle','none');
+title('Plot showing the fft result for different parameters');
+xlabel('Tau');
+ylabel('fft frequency');
+zlabel('magnitude');
 %% time evolution of pressure at a point
-P_punt=V(find(indexMap==pos_measure_point),:)*eta_deta(1:N,:);
-[pfft,f] = pwelch(P_punt(tau+80000:end),500,300,500,1/delta_t);%every point at time step of delta_t=10^-6 seconde
-
-figure(4);
-plot(timeInterval,P_punt(tau+2:end),'.');
-xlabel('time [s]');
-ylabel('Pressure[kg/m s^2]=[Pa]');
-
-figure(5);
-interest_range = 100;
-plot(f(1:interest_range),10*log10(pfft(1:interest_range)));
-xlabel('Frequency (Hz)');
-ylabel('Magnitude (dB)');
-
-figure;
-plot(eta_deta(1,:),eta_deta(N+1,:));
-title('phase space of eigenvector one');
-xlabel('function');
-ylabel('derivative');
-
-figure;
-pf = fft(P_punt(end-20000:end));
-plot(abs(pf(1:100)))
-
-figure;
-dP_punt = diff(P_punt);
-plot(P_punt(end-20000:end),dP_punt(end-20000:end));
-title('Phase space of whole solution');
+% P_punt=V(find(indexMap==pos_measure_point),:)*eta_deta(1:N,:);
+% [pfft,f] = pwelch(P_punt(tau+80000:end),500,300,500,1/delta_t);%every point at time step of delta_t=10^-6 seconde
+% 
+% figure(4);
+% plot(timeInterval,P_punt(tau+2:end),'.');
+% xlabel('time [s]');
+% ylabel('Pressure[kg/m s^2]=[Pa]');
+% 
+% figure(5);
+% interest_range = 100;
+% plot(f(1:interest_range),10*log10(pfft(1:interest_range)));
+% xlabel('Frequency (Hz)');
+% ylabel('Magnitude (dB)');
+% 
+% figure;
+% plot(eta_deta(1,:),eta_deta(N+1,:));
+% title('phase space of eigenvector one');
+% xlabel('function');
+% ylabel('derivative');
+% 
+% figure;
+% pf = fft(P_punt(end-20000:end));
+% plot(abs(pf(1:100)))
+% 
+% figure;
+% dP_punt = diff(P_punt);
+% plot(P_punt(end-20000:end),dP_punt(end-20000:end));
+% title('Phase space of whole solution');
 %% make some plots of eigenvectors A
 % [Vn,Dn] = eigs(dA,30,-0.01);
 % figure(6);
