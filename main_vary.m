@@ -28,7 +28,7 @@ dimY=100;
 ndof=dimX*dimY;
 
 %Number of eigenvectors:
-N = 20;
+N = 1;
 
 %% set up mesh
 [X,Y,delta_X,delta_Y,C,nodeInfo,boundOrientation] = SetUpMesh(dimX,dimY,h1,h2,l1,l2,c1,c2,f,d);
@@ -42,7 +42,7 @@ spy(nodeInfo);
 %% Fill matrix A and vector B. Solve the linear system
 % Solution of ddP-nabla.(c^2 nabla P)=q ==> ddP-AP=-B
 %always at least timesteps 1/(2*f)=1/(2*omega/(2pi))
-source_typ='WhiteNoise';
+source_typ='nothing';
 
 switch source_typ
     case 'cosinus'
@@ -105,16 +105,18 @@ eta_deta = zeros(2*N,tau+1);%time delay determines how much initial conditions w
 n=1000; %linear%
 k=200; %nonlinear%
 
-tau_range = 100:1:200;
+tau_range = 100:10:500;
 maxfreq = [];
 maxfreqampl = [];
 maxampl = [];
 fftsave = [];
+sourcesave = [];
 
 for tau = tau_range
  disp('Solving for following constant');
  tau
  eta_deta = zeros(2*N,tau+1); %start from still initial condition
+ eta_deta(1,tau+1)=1;
 [eta_deta, full_source] = solveSystem(D,V,Grad_V_full,N,delta_t,steps,dB,source,nodeInfo,sourceTemplate,eta_deta,tau,n,k);
 
 P_punt=V(find(indexMap==pos_measure_point),:)*eta_deta(1:N,:);
@@ -124,6 +126,7 @@ maxfreqampl = [maxfreqampl, max(pfft)];
 maxfreq = [maxfreq,find(pfft(1:2000) == maxfreqampl(end))];
 maxampl = [maxampl, max(P_punt)];
 fftsave = [fftsave, pfft(1:10000)'];
+sourcesave = [sourcesave,full_source'];
 end
 disp('time iteration done... starting extracting pressure');
 
