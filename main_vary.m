@@ -28,7 +28,7 @@ dimY=100;
 ndof=dimX*dimY;
 
 %Number of eigenvectors:
-N = 20;
+N = 1;
 
 %% set up mesh
 [X,Y,delta_X,delta_Y,C,nodeInfo,boundOrientation] = SetUpMesh(dimX,dimY,h1,h2,l1,l2,c1,c2,f,d);
@@ -42,7 +42,7 @@ spy(nodeInfo);
 %% Fill matrix A and vector B. Solve the linear system
 % Solution of ddP-nabla.(c^2 nabla P)=q ==> ddP-AP=-B
 %always at least timesteps 1/(2*f)=1/(2*omega/(2pi))
-source_typ='WhiteNoise';
+source_typ='nothing';
 
 switch source_typ
     case 'cosinus'
@@ -103,27 +103,33 @@ tau=500; %* nr of delta_t
 eta_deta = zeros(2*N,tau+1);%time delay determines how much initial conditions we need
 %Feedback constants
 n=1000; %linear%
-k=200; %nonlinear%
+k=0; %nonlinear%
 
-tau_range = 100:1:200;
+tau_range = 100:20:2000;
 maxfreq = [];
 maxfreqampl = [];
 maxampl = [];
 fftsave = [];
+sourcesave = [];
+sourceproduct = [];
 
 for tau = tau_range
  disp('Solving for following constant');
  tau
  eta_deta = zeros(2*N,tau+1); %start from still initial condition
+ eta_deta(1,tau+1)=1;
 [eta_deta, full_source] = solveSystem(D,V,Grad_V_full,N,delta_t,steps,dB,source,nodeInfo,sourceTemplate,eta_deta,tau,n,k);
 
 P_punt=V(find(indexMap==pos_measure_point),:)*eta_deta(1:N,:);
-fftstart = round(steps*4/5);
+%fftstart = round(steps*4/5);
+fftstart = 1;
 pfft = abs(fft(P_punt(fftstart:end)));
 maxfreqampl = [maxfreqampl, max(pfft)];
 maxfreq = [maxfreq,find(pfft(1:2000) == maxfreqampl(end))];
 maxampl = [maxampl, max(P_punt)];
 fftsave = [fftsave, pfft(1:10000)'];
+sourcesave = [sourcesave,full_source'];
+sourceproduct =  [sourceproduct, full_source*P_punt(tau+2:end)'];
 end
 disp('time iteration done... starting extracting pressure');
 
@@ -133,6 +139,7 @@ disp('time iteration done... starting extracting pressure');
 %CreateSparseGif(P,X,Y,100,dimX,dimY,indexMap,nodeInfo);
 
 %% Create plots of peaks
+Fs = 1/(delta_t*(length(pfft)));
 
 figure;
 plot(tau_range,maxfreqampl,'*');
@@ -141,7 +148,7 @@ ylabel('amplitude');
 xlabel('tau');
 
 figure;
-plot(tau_range,maxfreq,'*');
+plot(tau_range,maxfreq*Fs,'*');
 title('the maximum frequency in the fft');
 ylabel('frequency');
 xlabel('tau');
@@ -153,20 +160,23 @@ ylabel('amplitude');
 xlabel('tau');
 
 figure;
-maxfrequency = 250;
+maxfrequency = 150;
 surf(1:size(fftsave,2),1:maxfrequency,fftsave(1:maxfrequency,:),'linestyle','none');
 title('Plot showing the fft result for different parameters');
 xlabel('Tau');
 ylabel('fft frequency');
 zlabel('magnitude');
+
+figure;
+plot(tau_range,sourceproduct,'.');
 %% time evolution of pressure at a point
-% P_punt=V(find(indexMap==pos_measure_point),:)*eta_deta(1:N,:);
-% [pfft,f] = pwelch(P_punt(tau+80000:end),500,300,500,1/delta_t);%every point at time step of delta_t=10^-6 seconde
-% 
-% figure(4);
-% plot(timeInterval,P_punt(tau+2:end),'.');
-% xlabel('time [s]');
-% ylabel('Pressure[kg/m s^2]=[Pa]');
+P_punt=V(find(indexMap==pos_measure_point),:)*eta_deta(1:N,:);
+%[pfft,f] = pwelch(P_punt(tau+80000:end),500,300,500,1/delta_t);%every point at time step of delta_t=10^-6 seconde
+
+figure(4);
+plot(timeInterval,P_punt(tau+2:end),'.');
+xlabel('time [s]');
+ylabel('Pressure[kg/m s^2]=[Pa]');
 % 
 % figure(5);
 % interest_range = 100;
@@ -204,3 +214,7 @@ zlabel('magnitude');
 % title('Speed of sound over the domain');
 % C(find(nodeInfo<0))=NaN;
 % surf(X,Y,C);
+%%
+% timelength = delta_t*(steps*1/5);
+% timescale = linspace(0,timelength,length(pfft));
+% timescale = timescale(1:length(fftsave(:,1)));
