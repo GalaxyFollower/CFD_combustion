@@ -28,7 +28,7 @@ dimY=100;
 ndof=dimX*dimY;
 
 %Number of eigenvectors:
-N = 1;
+N = 20;
 
 %% set up mesh
 [X,Y,delta_X,delta_Y,C,nodeInfo,boundOrientation] = SetUpMesh(dimX,dimY,h1,h2,l1,l2,c1,c2,f,d);
@@ -103,7 +103,7 @@ tau=500; %* nr of delta_t
 eta_deta = zeros(2*N,tau+1);%time delay determines how much initial conditions we need
 %Feedback constants
 n=1000; %linear%
-k=0; %nonlinear%
+k=500; %nonlinear%
 
 tau_range = 100:20:2000;
 maxfreq = [];
@@ -129,7 +129,7 @@ maxfreq = [maxfreq,find(pfft(1:2000) == maxfreqampl(end))];
 maxampl = [maxampl, max(P_punt)];
 fftsave = [fftsave, pfft(1:10000)'];
 sourcesave = [sourcesave,full_source'];
-sourceproduct =  [sourceproduct, full_source*P_punt(tau+2:end)'];
+sourceproduct =  [sourceproduct, full_source*P_punt(1:end-tau-1)'];
 end
 disp('time iteration done... starting extracting pressure');
 
@@ -160,8 +160,8 @@ ylabel('amplitude');
 xlabel('tau');
 
 figure;
-maxfrequency = 150;
-surf(1:size(fftsave,2),1:maxfrequency,fftsave(1:maxfrequency,:),'linestyle','none');
+maxfrequency = 1000;
+surf(tau_range,1:maxfrequency,fftsave(1:maxfrequency,:),'linestyle','none');
 title('Plot showing the fft result for different parameters');
 xlabel('Tau');
 ylabel('fft frequency');
@@ -173,7 +173,7 @@ plot(tau_range,sourceproduct,'.');
 P_punt=V(find(indexMap==pos_measure_point),:)*eta_deta(1:N,:);
 %[pfft,f] = pwelch(P_punt(tau+80000:end),500,300,500,1/delta_t);%every point at time step of delta_t=10^-6 seconde
 
-figure(4);
+figure;
 plot(timeInterval,P_punt(tau+2:end),'.');
 xlabel('time [s]');
 ylabel('Pressure[kg/m s^2]=[Pa]');
