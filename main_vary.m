@@ -28,7 +28,7 @@ dimY=100;
 ndof=dimX*dimY;
 
 %Number of eigenvectors:
-N = 1;
+N = 2;
 
 %% set up mesh
 [X,Y,delta_X,delta_Y,C,nodeInfo,boundOrientation] = SetUpMesh(dimX,dimY,h1,h2,l1,l2,c1,c2,f,d);
@@ -103,9 +103,9 @@ tau=500; %* nr of delta_t
 eta_deta = zeros(2*N,tau+1);%time delay determines how much initial conditions we need
 %Feedback constants
 n=1000; %linear%
-k=0; %nonlinear%
+k=500; %nonlinear%
 
-tau_range = 200:20:2000;
+tau_range = 100:20:2000;
 maxfreq = []; % Saves which frequency was the maximum frequency
 maxfreqampl = []; %Saves the amplitude of the maximum frequency
 maxampl = []; % Saves the overall maximum amplitude of the solution
@@ -139,10 +139,11 @@ disp('time iteration done... starting extracting pressure');
 %CreateSparseGif(P,X,Y,100,dimX,dimY,indexMap,nodeInfo);
 
 %% Create plots of peaks
-Fs = 1/(delta_t*(length(pfft)));
+Fs = 1/(delta_t*(length(pfft))); %Needed for translating the fourier frequencies into actual frequencies
+%FS is the amount of times the measured period occures within one unit of time
 
 figure;
-plot(tau_range,maxfreqampl,'*');
+semilogy(tau_range,maxfreqampl,'*');
 title('amplitude of the maximum frequency in the fft');
 ylabel('amplitude');
 xlabel('tau');
@@ -154,7 +155,7 @@ ylabel('frequency');
 xlabel('tau');
 
 figure;
-plot(tau_range,maxampl,'*');
+semilogy(tau_range,maxampl,'*');
 title('global maximum of the solution');
 ylabel('amplitude');
 xlabel('tau');
@@ -168,8 +169,10 @@ ylabel('fft frequency');
 zlabel('magnitude');
 
 figure;
-plot(tau_range,delta_t*sourceproduct,'.');
+semilogy(tau_range,delta_t*sourceproduct,'*');
 title('Rayleigh Criterion');
+ylabel('Integral value');
+xlabel('tau');
 %% time evolution of pressure at a point
 P_punt=V(find(indexMap==pos_measure_point),:)*eta_deta(1:N,:);
 %[pfft,f] = pwelch(P_punt(tau+80000:end),500,300,500,1/delta_t);%every point at time step of delta_t=10^-6 seconde
@@ -185,20 +188,22 @@ ylabel('Pressure[kg/m s^2]=[Pa]');
 % xlabel('Frequency (Hz)');
 % ylabel('Magnitude (dB)');
 % 
-% figure;
-% plot(eta_deta(1,:),eta_deta(N+1,:));
-% title('phase space of eigenvector one');
-% xlabel('function');
-% ylabel('derivative');
+figure;
+plot(eta_deta(1,:),eta_deta(N+1,:));
+title('phase space of eigenvector one');
+xlabel('function');
+ylabel('derivative');
 % 
 % figure;
 % pf = fft(P_punt(end-20000:end));
 % plot(abs(pf(1:100)))
 % 
-% figure;
-% dP_punt = diff(P_punt);
-% plot(P_punt(end-20000:end),dP_punt(end-20000:end));
-% title('Phase space of whole solution');
+figure;
+dP_punt = diff(P_punt);
+plot(P_punt(end-20000:end),dP_punt(end-20000:end));
+title('Phase space of whole solution');
+xlabel('Pressure');
+ylabel('Time derivative of pressure');
 %% make some plots of eigenvectors A
 % [Vn,Dn] = eigs(dA,30,-0.01);
 % figure(6);
