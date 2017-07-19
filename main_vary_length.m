@@ -28,16 +28,26 @@ dimY=100;
 ndof=dimX*dimY;
 
 %Number of eigenvectors:
-N = 2;
+N = 20;
+
+%Variables saved every iteration for post-processing
+maxfreq = []; % Saves which frequency was the maximum frequency
+maxfreqampl = []; %Saves the amplitude of the maximum frequency
+maxampl = []; % Saves the overall maximum amplitude of the solution
+fftsave = []; % Saves the whole fft (within a certain spectrum)
+sourcesave = []; %Saves the whole source for every run
+sourceproduct = []; %For showing the Rayleigh Criterion
 
 %% set up mesh
+length_range = linspace(0.336,0.736,20);
+for l2 = length_range
 [X,Y,delta_X,delta_Y,C,nodeInfo,boundOrientation] = SetUpMesh(dimX,dimY,h1,h2,l1,l2,c1,c2,f,d);
 indexMap = getIndexMap(nodeInfo);
 
 disp('mesh is set up');
 
-figure(1);
-spy(nodeInfo);
+% figure(1);
+% spy(nodeInfo);
 
 %% Fill matrix A and vector B. Solve the linear system
 % Solution of ddP-nabla.(c^2 nabla P)=q ==> ddP-AP=-B
@@ -105,17 +115,10 @@ eta_deta = zeros(2*N,tau+1);%time delay determines how much initial conditions w
 n=1000; %linear%
 k=500; %nonlinear%
 
-tau_range = 100:20:2000;
-maxfreq = []; % Saves which frequency was the maximum frequency
-maxfreqampl = []; %Saves the amplitude of the maximum frequency
-maxampl = []; % Saves the overall maximum amplitude of the solution
-fftsave = []; % Saves the whole fft (within a certain spectrum)
-sourcesave = []; %Saves the whole source for every run
-sourceproduct = []; %For showing the Rayleigh Criterion
 
-for tau = tau_range
+
  disp('Solving for following constant');
- tau
+ l2
  eta_deta = zeros(2*N,tau+1); %start from still initial condition
  eta_deta(1,tau+1)=1;
 [eta_deta, full_source] = solveSystem(D,V,Grad_V_full,N,delta_t,steps,dB,source,nodeInfo,sourceTemplate,eta_deta,tau,n,k);
@@ -130,9 +133,9 @@ maxampl = [maxampl, max(P_punt)];
 fftsave = [fftsave, pfft(1:10000)'];
 sourcesave = [sourcesave,full_source'];
 sourceproduct =  [sourceproduct, cumtrapz(full_source)*P_punt(tau+2:end)']; %Integrate because feedback is the source integrated.
-end
 disp('time iteration done... starting extracting pressure');
-
+ 
+end
 %P=V*eta_deta(1:N,:);%(ndof*N)(N*steps)
 
 %% Create Gif with sparse Matrix
@@ -143,36 +146,36 @@ Fs = 1/(delta_t*(length(pfft))); %Needed for translating the fourier frequencies
 %FS is the amount of times the measured period occures within one unit of time
 
 figure;
-semilogy(tau_range,maxfreqampl,'*');
+semilogy(length_range,maxfreqampl,'*');
 title('amplitude of the maximum frequency in the fft');
 ylabel('amplitude');
-xlabel('tau');
+xlabel('l2');
 
 figure;
-plot(tau_range,maxfreq*Fs,'*');
+plot(length_range,maxfreq*Fs,'*');
 title('the maximum frequency in the fft');
 ylabel('frequency');
-xlabel('tau');
+xlabel('l2');
 
 figure;
-semilogy(tau_range,maxampl,'*');
+semilogy(length_range,maxampl,'*');
 title('global maximum of the solution');
 ylabel('amplitude');
-xlabel('tau');
+xlabel('l2');
 
 figure;
 maxfrequency = 1000;
-surf(tau_range,(1:maxfrequency)*Fs,fftsave(1:maxfrequency,:),'linestyle','none');
+surf(length_range,(1:maxfrequency)*Fs,fftsave(1:maxfrequency,:),'linestyle','none');
 title('Plot showing the fft result for different parameters');
-xlabel('Tau');
+xlabel('l2');
 ylabel('fft frequency');
 zlabel('magnitude');
 
 figure;
-semilogy(tau_range,delta_t*sourceproduct,'*');
+semilogy(length_range,delta_t*sourceproduct,'*');
 title('Rayleigh Criterion');
 ylabel('Integral value');
-xlabel('tau');
+xlabel('l2');
 %% time evolution of pressure at a point
 P_punt=V(find(indexMap==pos_measure_point),:)*eta_deta(1:N,:);
 %[pfft,f] = pwelch(P_punt(tau+80000:end),500,300,500,1/delta_t);%every point at time step of delta_t=10^-6 seconde
