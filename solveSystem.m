@@ -2,7 +2,6 @@ function [ eta_deta,total_source ] = solveSystem(D,V,Grad_V_full,N,delta_t,steps
 
 theta = 0.5;
 
-
 sysMat = zeros(2*N);
 sysMat(1:N,N+1:end)=eye(N);
 sysMat(N+1:end,1:N)=D;
