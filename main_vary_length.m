@@ -39,8 +39,8 @@ sourcesave = []; %Saves the whole source for every run
 sourceproduct = []; %For showing the Rayleigh Criterion
 
 %% set up mesh
-length_range = [ones(1,20)*0.336,linspace(0.336,0.700,20),linspace(0.700,0.336,20)];
-tau=200; %* nr of delta_t
+length_range = [ones(1,20)*0.336,linspace(0.336,0.700,40),linspace(0.700,0.336,40)];
+tau=100; %* nr of delta_t
 eta_deta = zeros(2*N,tau+1);%time delay determines how much initial conditions we need
 %%
 for l2 = length_range
@@ -153,24 +153,38 @@ ylabel('amplitude');
 xlabel('l2');
 
 figure;
-plot(length_range,maxfreq*Fs,'*');
-title('the maximum frequency in the fft');
+plot(length_range(21:60),maxfreq(21:60)*Fs,'*b');
+hold on;
+plot(length_range(61:100),maxfreq(61:100)*Fs,'.r');
+title('the dominating frequency in the fft');
 ylabel('frequency');
 xlabel('l2');
 
 figure;
-semilogy(length_range,maxampl,'*');
+semilogy(length_range(21:60),maxampl(21:60),'*b');
+hold on;
+semilogy(length_range(61:100),maxampl(61:100),'.r');
 title('global maximum of the solution');
 ylabel('amplitude');
 xlabel('l2');
 
 figure;
-maxfrequency = 3000;
-surf(length_range,(1:maxfrequency)*Fs,fftsave(1:maxfrequency,:),'linestyle','none');
-title('Plot showing the fft result for different parameters');
+maxfrequency = 2500;
+surf(length_range(21:60),(1:maxfrequency)*Fs,log(fftsave(1:maxfrequency,(21:60))),'linestyle','none');
+title('Plot showing the fft result for different parameters, length increasing');
 xlabel('l2');
 ylabel('fft frequency');
 zlabel('magnitude');
+colorbar;
+
+figure;
+maxfrequency = 2500;
+surf(length_range(61:100),(1:maxfrequency)*Fs,log(fftsave(1:maxfrequency,(61:100))),'linestyle','none');
+title('Plot showing the fft result for different parameters, length decreasing');
+xlabel('l2');
+ylabel('fft frequency');
+zlabel('magnitude');
+colorbar;
 
 figure;
 semilogy(length_range,delta_t*sourceproduct,'*');
