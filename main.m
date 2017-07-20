@@ -144,18 +144,18 @@ dP_punt = diff(P_punt);
 plot(P_punt(end-20000:end),dP_punt(end-20000:end));
 title('Phase space of whole solution');
 %% make some plots of eigenvectors A
-% [Vn,Dn] = eigs(dA,30,-0.01);
-% figure(6);
-% for i = 1:6
-%     VFull = mapToFull(Vn(:,i),indexMap,ndof);
-%     VFull = reshape(VFull,[dimY,dimX]);
-%     VFull(find(nodeInfo<0))=NaN;
-%     subplot(3,2,i);
-%     surf(X,Y,VFull);
-%     title(Dn(i,i));
-% end
-%     
-% figure(7);
-% title('Speed of sound over the domain');
-% C(find(nodeInfo<0))=NaN;
-% surf(X,Y,C);
+[Vn,Dn] = eigs(dA,30,-0.01);
+figure(6);
+for i = 1:6
+    VFull = mapToFull(Vn(:,i),indexMap,ndof);
+    VFull = reshape(VFull,[dimY,dimX]);
+    VFull(find(nodeInfo<0))=NaN;
+    subplot(3,2,i);
+    surf(X,Y,VFull);
+    title(Dn(i,i));
+end
+    
+figure(7);
+title('Speed of sound over the domain');
+C(find(nodeInfo<0))=NaN;
+surf(X,Y,C);

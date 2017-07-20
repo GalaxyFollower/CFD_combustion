@@ -28,7 +28,7 @@ dimY=100;
 ndof=dimX*dimY;
 
 %Number of eigenvectors:
-N = 10;
+N = 20;
 
 %Variables saved every iteration for post-processing
 maxfreq = []; % Saves which frequency was the maximum frequency
@@ -39,8 +39,8 @@ sourcesave = []; %Saves the whole source for every run
 sourceproduct = []; %For showing the Rayleigh Criterion
 
 %% set up mesh
-length_range = [ones(1,20)*0.336,linspace(0.336,0.700,20),linspace(0.700,0.366,20)];
-tau=100; %* nr of delta_t
+length_range = [ones(1,20)*0.336,linspace(0.336,0.700,20),linspace(0.700,0.336,20)];
+tau=200; %* nr of delta_t
 eta_deta = zeros(2*N,tau+1);%time delay determines how much initial conditions we need
 %%
 for l2 = length_range
@@ -113,8 +113,8 @@ for l2 = length_range
     %eta_deta(1:N,tau+1) = 1; %op t=tau+1 exitatie 1 mode
     
     %Feedback constants
-    n=1; %linear%
-    k=3.4; %nonlinear%
+    n=10; %linear%
+    k=34; %nonlinear%
     
     disp('Solving for following constant');
     l2
@@ -165,7 +165,7 @@ ylabel('amplitude');
 xlabel('l2');
 
 figure;
-maxfrequency = 1000;
+maxfrequency = 3000;
 surf(length_range,(1:maxfrequency)*Fs,fftsave(1:maxfrequency,:),'linestyle','none');
 title('Plot showing the fft result for different parameters');
 xlabel('l2');
