@@ -14,13 +14,13 @@ d=0.080; %length between flame end and detection point
 
 %time [s]
 t_0 = 0;
-t_end = 0.5;
-delta_t = 10^(-6);
+t_end = 2;
+delta_t = 10^(-5);
 
 steps = round((t_end-t_0)/delta_t);
 timeInterval = t_0:delta_t:t_end-delta_t;
 
-tau=1000; %* nr of delta_t
+tau=300; %* nr of delta_t
 delta_t=(t_end-t_0)/(steps-1);%0.001 second=1millisecond
 
 % Number of degrees of freedom (number of nodes per length)
@@ -29,15 +29,15 @@ dimY=100;
 ndof=dimX*dimY;
 
 %Number of eigenvectors:
-N = 20;
+N = 2;
 
 %Initial condition:
 eta_deta = zeros(2*N,tau+1);%time delay determines how much initial conditions we need
 %eta_deta(1:N,tau+1) = 1; %op t=tau+1 exitatie 1 mode
 
 %Feedback constants
-n=100; %linear%
-k=3.4; %nonlinear%
+n=1000; %linear%
+k=500; %nonlinear%
 
 %% set up mesh
 [X,Y,delta_X,delta_Y,C,nodeInfo,boundOrientation] = SetUpMesh(dimX,dimY,h1,h2,l1,l2,c1,c2,f,d);
@@ -116,46 +116,45 @@ disp('time iteration done... starting extracting pressure');
 
 %% time evolution of pressure at a point
 P_punt=V(find(indexMap==pos_measure_point),:)*eta_deta(1:N,:);
-[pfft,f] = pwelch(P_punt(tau+80000:end),500,300,500,1/delta_t);%every point at time step of delta_t=10^-6 seconde
+%[pfft,f] = pwelch(P_punt(tau+80000:end),500,300,500,1/delta_t);%every point at time step of delta_t=10^-6 seconde
 
 figure(4);
 plot(timeInterval,P_punt(tau+2:end),'.');
 xlabel('time [s]');
 ylabel('Pressure[kg/m s^2]=[Pa]');
 
-figure(5);
-interest_range = 100;
-plot(f(1:interest_range),10*log10(pfft(1:interest_range)));
-xlabel('Frequency (Hz)');
-ylabel('Magnitude (dB)');
-
 figure;
 plot(eta_deta(1,:),eta_deta(N+1,:));
 title('phase space of eigenvector one');
 xlabel('function');
 ylabel('derivative');
+3
 
 figure;
-pf = fft(P_punt(end-20000:end));
+pf = fft(P_punt(end-2000:end));
 plot(abs(pf(1:100)))
+4
 
 figure;
 dP_punt = diff(P_punt);
-plot(P_punt(end-20000:end),dP_punt(end-20000:end));
+plot(P_punt(end-2000:end),dP_punt(end-2000:end));
 title('Phase space of whole solution');
 %% make some plots of eigenvectors A
-[Vn,Dn] = eigs(dA,30,-0.01);
-figure(6);
-for i = 1:6
-    VFull = mapToFull(Vn(:,i),indexMap,ndof);
-    VFull = reshape(VFull,[dimY,dimX]);
-    VFull(find(nodeInfo<0))=NaN;
-    subplot(3,2,i);
-    surf(X,Y,VFull);
-    title(Dn(i,i));
-end
-    
+% [Vn,Dn] = eigs(dA,30,-0.01);
+% figure(6);
+% for i = 1:6
+%     VFull = mapToFull(Vn(:,i),indexMap,ndof);
+%     VFull = reshape(VFull,[dimY,dimX]);
+%     VFull(find(nodeInfo<0))=NaN;
+%     subplot(3,2,i);
+%     surf(X,Y,VFull);
+%     title(Dn(i,i));
+% end
+%     
 figure(7);
 title('Speed of sound over the domain');
 C(find(nodeInfo<0))=NaN;
 surf(X,Y,C);
+xlabel('x');
+ylabel('y');
+zlabel('C');
