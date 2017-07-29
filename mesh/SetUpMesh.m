@@ -101,6 +101,6 @@ nodeInfo(indexBottomStart_2+1,end)=12;%SE corner
 boundOrientation=[1 1;2 2;3 3;4 4;5 2;6 3;7 1;8 4;9 5;10 6;11 7;12 8]; %[13 9;14 10;15 11;16 12]; Inner corners as sides
 
 %% Speed of Sound
-C=300*(2+tanh(1/100*(X-(l1+c2))));%[mm/ms]
+C=300*(2+tanh((1/100)*(X-(l1+c2))));%[mm/ms]
 %C=300.*ones(size(X));
 end

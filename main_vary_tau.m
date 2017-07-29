@@ -142,23 +142,47 @@ disp('time iteration done... starting extracting pressure');
 Fs = 1/(delta_t*(length(pfft))); %Needed for translating the fourier frequencies into actual frequencies
 %FS is the amount of times the measured period occures within one unit of time
 
+tau_range = tau_range/100;
+
+level = 100;
+abovelevel = maxfreq>level;
+
+
 figure;
-semilogy(tau_range,maxfreqampl,'*');
+maxfreqampl_upper = maxfreqampl;
+maxfreqampl_lower = maxfreqampl;
+maxfreqampl_upper(abovelevel)=NaN;
+maxfreqampl_lower(~abovelevel)=NaN;
+semilogy(tau_range,maxfreqampl_upper,'*r');
+hold on;
+semilogy(tau_range,maxfreqampl_lower,'*b');
 title('amplitude of the maximum frequency in the fft');
 ylabel('amplitude');
-xlabel('tau');
+xlabel('tau (ms)');
 
 figure;
-plot(tau_range,maxfreq*Fs,'*');
+maxfreq_upper = maxfreq;
+maxfreq_lower = maxfreq;
+maxfreq_upper(abovelevel)=NaN;
+maxfreq_lower(~abovelevel)=NaN;
+plot(tau_range,maxfreq_upper*Fs,'*r');
+hold on;
+plot(tau_range,maxfreq_lower*Fs,'*b');
 title('the maximum frequency in the fft');
 ylabel('frequency');
-xlabel('tau');
+xlabel('tau (ms)');
 
 figure;
-semilogy(tau_range,maxampl,'*');
+maxampl_upper = maxampl;
+maxampl_lower = maxampl;
+maxampl_upper(abovelevel)=NaN;
+maxampl_lower(~abovelevel)=NaN;
+semilogy(tau_range,maxampl_upper,'*r');
+hold on;
+semilogy(tau_range,maxampl_lower,'*b');
 title('global maximum of the solution');
 ylabel('amplitude');
-xlabel('tau');
+xlabel('tau (ms)');
 
 figure;
 maxfrequency = 1000;
@@ -169,10 +193,16 @@ ylabel('fft frequency');
 zlabel('magnitude');
 
 figure;
-semilogy(tau_range,delta_t*sourceproduct,'*');
+sp_upper = sourceproduct;
+sp_lower = sourceproduct;
+sp_upper(abovelevel)=NaN;
+sp_lower(~abovelevel)=NaN;
+semilogy(tau_range,delta_t*sp_upper,'*r');
+hold on;
+semilogy(tau_range,delta_t*sp_lower,'*b');
 title('Rayleigh Criterion');
 ylabel('Integral value');
-xlabel('tau');
+xlabel('tau (ms)');
 %% time evolution of pressure at a point
 P_punt=V(find(indexMap==pos_measure_point),:)*eta_deta(1:N,:);
 %[pfft,f] = pwelch(P_punt(tau+80000:end),500,300,500,1/delta_t);%every point at time step of delta_t=10^-6 seconde

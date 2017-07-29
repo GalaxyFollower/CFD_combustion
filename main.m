@@ -14,13 +14,13 @@ d=0.080; %length between flame end and detection point
 
 %time [s]
 t_0 = 0;
-t_end = 2;
+t_end = 1;
 delta_t = 10^(-5);
 
 steps = round((t_end-t_0)/delta_t);
 timeInterval = t_0:delta_t:t_end-delta_t;
 
-tau=300; %* nr of delta_t
+tau=100; %* nr of delta_t
 delta_t=(t_end-t_0)/(steps-1);%0.001 second=1millisecond
 
 % Number of degrees of freedom (number of nodes per length)
@@ -29,15 +29,15 @@ dimY=100;
 ndof=dimX*dimY;
 
 %Number of eigenvectors:
-N = 2;
+N = 20;
 
 %Initial condition:
 eta_deta = zeros(2*N,tau+1);%time delay determines how much initial conditions we need
 %eta_deta(1:N,tau+1) = 1; %op t=tau+1 exitatie 1 mode
 
 %Feedback constants
-n=1000; %linear%
-k=500; %nonlinear%
+n=10; %linear%
+k=34; %nonlinear%
 
 %% set up mesh
 [X,Y,delta_X,delta_Y,C,nodeInfo,boundOrientation] = SetUpMesh(dimX,dimY,h1,h2,l1,l2,c1,c2,f,d);
@@ -112,7 +112,7 @@ disp('time iteration done... starting extracting pressure');
 %P=V*eta_deta(1:N,:);%(ndof*N)(N*steps)
 
 %% Create Gif with sparse Matrix
-%CreateSparseGif(P,X,Y,100,dimX,dimY,indexMap,nodeInfo);
+%CreateSparseGifFromEta(eta_deta(1:N,:),V,X,Y,10,dimX,dimY,indexMap,nodeInfo);
 
 %% time evolution of pressure at a point
 P_punt=V(find(indexMap==pos_measure_point),:)*eta_deta(1:N,:);
@@ -140,17 +140,19 @@ dP_punt = diff(P_punt);
 plot(P_punt(end-2000:end),dP_punt(end-2000:end));
 title('Phase space of whole solution');
 %% make some plots of eigenvectors A
-% [Vn,Dn] = eigs(dA,30,-0.01);
-% figure(6);
-% for i = 1:6
-%     VFull = mapToFull(Vn(:,i),indexMap,ndof);
-%     VFull = reshape(VFull,[dimY,dimX]);
-%     VFull(find(nodeInfo<0))=NaN;
-%     subplot(3,2,i);
-%     surf(X,Y,VFull);
-%     title(Dn(i,i));
-% end
-%     
+[Vn,Dn] = eigs(dA,30,-0.01);
+figure(6);
+for i = 1:6
+    VFull = mapToFull(Vn(:,i),indexMap,ndof);
+    VFull = reshape(VFull,[dimY,dimX]);
+    VFull(find(nodeInfo<0))=NaN;
+    subplot(3,2,i);
+    pcolor(X,Y,VFull);
+    colorbar;
+    shading flat
+    title(Dn(i,i));
+end
+    
 figure(7);
 title('Speed of sound over the domain');
 C(find(nodeInfo<0))=NaN;
